@@ -16,6 +16,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".VedioIssue"/>
+        <activity android:name=".VedioPhoto"/>
+        <activity android:name=".VedioPlay"
+            android:configChanges="screenLayout|orientation"/>
+        <activity android:name=".VedioSubmit"/>
     </application>
 
 </manifest>
