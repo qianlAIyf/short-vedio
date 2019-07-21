@@ -34,7 +34,7 @@ public class VedioIssue extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle  savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.vedio_issue);
+        setContentView(R.layout.video_issue);
 
         btn_selectPic = findViewById(R.id.btn_selectPic);
         btn_selectVideo = findViewById(R.id.btn_selectVideo);

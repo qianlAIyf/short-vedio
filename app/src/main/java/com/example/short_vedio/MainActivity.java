@@ -1,13 +1,10 @@
 package com.example.short_vedio;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
+import android.graphics.Rect;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,17 +14,17 @@ import android.widget.ImageView;
 
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.annotation.NonNull;
-import android.widget.Toast;
-
 import com.bumptech.glide.Glide;
 import com.example.short_vedio.bean.TinyVedio;
 import com.example.short_vedio.network.TinyVedioService;
 
 import static android.support.v7.widget.RecyclerView.Adapter;
 import static android.support.v7.widget.RecyclerView.ViewHolder;
+import static android.widget.LinearLayout.HORIZONTAL;
+import static android.widget.LinearLayout.VERTICAL;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import retrofit2.Call;
@@ -38,20 +35,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button buttonIssue, buttonPhoto;
+    Button buttonIssue, buttonPhoto, buttonSubmit;
 
     public RecyclerView mRv;
     private TinyVedio mTinyVedios;
-
-//    private static final int REQUEST_IMAGE_CAPTURE = 1;
-//    private static final int REQUEST_VIDEO_CAPTURE = 2;
-    private static final int REQUEST_EXTERNAL_CAMERA = 101;
-
-    private String[] mPermissionsArrays = new String[]{
-            Manifest.permission.CAMERA,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,49 +54,43 @@ public class MainActivity extends AppCompatActivity {
         buttonIssue.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    //todo 在这里申请权限
-                    if (!checkPermissionAllGranted(mPermissionsArrays)) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            requestPermissions(mPermissionsArrays, REQUEST_EXTERNAL_CAMERA);
-                        }
-                    } else {
-                        Toast.makeText(MainActivity.this, "已经获取所有所需权限", Toast.LENGTH_SHORT).show();
-                    }
-                }
                 startActivity(new Intent(MainActivity.this,VedioIssue.class));
             }
         });
         buttonPhoto.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-
-                if (ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                        || ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                    //todo 在这里申请相机、存储的权限
-                    ActivityCompat.requestPermissions(MainActivity.this,
-                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},REQUEST_EXTERNAL_CAMERA);
-
-                }
                 startActivity(new Intent(MainActivity.this,VedioPhoto.class));
             }
         });
 
+//RecyclerView
+        mRv.addItemDecoration(new DividerItemDecoration(this, VERTICAL));
 
         mRv.setLayoutManager(new LinearLayoutManager(this));
-        mRv.setAdapter(new Adapter(){
+        Adapter adapter = new Adapter(){
             @NonNull @Override
             public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i){
                 ImageView imageView = new ImageView(viewGroup.getContext());
                 imageView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                imageView.setAdjustViewBounds(true);
                 return new MyViewHolder(imageView);
             }
 
             @Override
             public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+                final int itemPosition = viewHolder.getLayoutPosition();
+
+                viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(v.getContext(),VedioPlay.class);
+                        intent.putExtra("vedio_url",mTinyVedios.getFeeds().get(itemPosition).getVedio_url());
+                        intent.putExtra("created_At",mTinyVedios.getFeeds().get(itemPosition).getCreatedAt().toString());
+                        intent.putExtra("author",mTinyVedios.getFeeds().get(itemPosition).getUser_name());
+                        v.getContext().startActivity(intent);
+                    }
+                });
                 ImageView iv =(ImageView) viewHolder.itemView;
                 String image_url = mTinyVedios.getFeeds().get(i).getImage_url();
                 String vedio_url = mTinyVedios.getFeeds().get(i).getVedio_url();
@@ -118,11 +99,13 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemCount() {
-                return 0;
+                return mTinyVedios == null ? 0 : mTinyVedios.getFeeds().size();
             }
-        });
+        };
 
-        this.requestData();
+        mRv.setAdapter(adapter);
+
+        this.requestData();//获取视频列表数据
     }
 
     public static class MyViewHolder extends ViewHolder {
@@ -134,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
     public void requestData() {
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://test.androidcamp.bytedance.com")
+                .baseUrl("http://test.androidcamp.bytedance.com/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
@@ -160,27 +143,4 @@ public class MainActivity extends AppCompatActivity {
         mRv.getAdapter().notifyDataSetChanged();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_EXTERNAL_CAMERA: {
-                //todo 判断权限是否已经授予
-                Toast.makeText(this, "已经授权" + Arrays.toString(permissions), Toast.LENGTH_LONG).show();
-                break;
-            }
-        }
-    }
-    private boolean checkPermissionAllGranted(String[] permissions) {
-        // 6.0以下不需要
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return true;
-        }
-        for (String permission : permissions) {
-            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-                // 只要有一个权限没有被授予, 则直接返回 false
-                return false;
-            }
-        }
-        return true;
-    }
 }
