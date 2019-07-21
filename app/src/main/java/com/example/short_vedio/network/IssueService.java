@@ -12,6 +12,6 @@ import retrofit2.http.Part;
 
 public interface IssueService {
     @Multipart
-    @POST("你的地址")
+    @POST("mini_douyin/invoke/video")
     Call<TinyVedio> upLoading(@Part List<MultipartBody.Part> partList);
 }
