@@ -36,9 +36,12 @@
         android:id="@+id/rv"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/linearlayout"
-        tools:layout_editor_absoluteX="0dp" />
+        android:scrollbars="vertical"
+        android:scrollbarSize="10dp"
+        />
 
 </android.support.constraint.ConstraintLayout>
