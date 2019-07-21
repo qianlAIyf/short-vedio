@@ -1,5 +1,6 @@
 package com.example.short_vedio;
 
+import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -8,7 +9,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -41,13 +44,13 @@ public class VedioIssue extends AppCompatActivity {
 
     private ImageView imageView;
     private VideoView videoView;
-
     private  File imgFile;
     private  static  final int REQUEST_CODE_PIC_PHOTO = 3;
     private  static  final int REQUEST_CODE_VIDEO = 4;
 
     public static final String SD_HOME_DIR = Environment.getExternalStorageDirectory().getPath() + "";          //SD卡根目录
-    private final String file1Location = SD_HOME_DIR + "file1.jpg";         //要上传的文件存储位置
+    private final String imageFileLocation = SD_HOME_DIR + "";         //要上传的文件存储位置
+    private final String videoFile1Location = SD_HOME_DIR + "";         //要上传的文件存储位置
 
     @Override
     protected void onCreate(Bundle  savedInstanceState) {
@@ -92,19 +95,15 @@ public class VedioIssue extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_PIC_PHOTO ) {
-//            Uri uri = data.getData();
-//            Cursor cursor = getContentResolver().query(uri, null, null,
-//                    null, null);
-//            cursor.moveToFirst();
-//            // String imgNo = cursor.getString(0); // 图片编号
-//            String v_path = cursor.getString(1); // 图片文件路径
-//              imgFile = new File(v_path);
-//            imgFile = new File(uri.getPath().toString());
-            setPic();
-
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap)extras.get("data");
-            imageView.setImageBitmap(imageBitmap);
+//判断手机系统版本号
+            if(Build.VERSION.SDK_INT>=19){
+                //4.4及以上系统使用这个方法处理图片
+                handlerImageOnKitKat(data);
+            }
+//            else{
+////                //4.4以下系统使用这个方法处理图片
+////                handlerImageBeforeKitKat(data);
+////            }
         }
         else if(requestCode == REQUEST_CODE_VIDEO ){
             Uri videoUri = data.getData();
@@ -115,33 +114,80 @@ public class VedioIssue extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void setPic(){
-//        int targetW = imageView.getWidth();
-//        int targetH = imageView.getHeight();
-//
-//        BitmapFactory.Options bmOption = new BitmapFactory.Options();
-//        bmOption.inJustDecodeBounds = true;
-//        BitmapFactory.decodeFile(imgFile.getPath(),bmOption);
-//        int photoW = bmOption.outWidth;
-//        int photoH = bmOption.outHeight;
-//
-//        int scaleFactor = Math.min(photoW/targetW,photoH/targetH);
-//        bmOption.inJustDecodeBounds = false;
-//        bmOption.inSampleSize = scaleFactor;
-//        bmOption.inPurgeable = true;
-//        bmOption.inInputShareable = true;
-//
-//
-//        Bitmap bmp = BitmapFactory.decodeFile(imgFile.getAbsolutePath(),bmOption);
-//        bmp= Utils.rotateImage(bmp,Utils.convertUriToPath(this,Uri.fromFile(imgFile)));
-//        imageView.setImageBitmap(bmp);
+    private void setPic(String imagePath){
+        imgFile = new File(imagePath);
+        int targetW = imageView.getWidth();
+        int targetH = imageView.getHeight();
+
+        BitmapFactory.Options bmOption = new BitmapFactory.Options();
+        bmOption.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(imgFile.getPath(),bmOption);
+        int photoW = bmOption.outWidth;
+        int photoH = bmOption.outHeight;
+        int scaleFactor = Math.min(photoW/targetW,photoH/targetH);
+        bmOption.inJustDecodeBounds = false;
+        bmOption.inSampleSize = scaleFactor;
+        bmOption.inPurgeable = true;
+        bmOption.inInputShareable = true;
+
+
+        Bitmap bmp = BitmapFactory.decodeFile(imgFile.getAbsolutePath(),bmOption);
+        bmp= Utils.rotateImage(bmp,Utils.convertUriToPath(this,Uri.fromFile(imgFile)));
+
+        imageView.setImageBitmap(bmp);
 
     }
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private void handlerImageOnKitKat(Intent data){
+        String imagePath=null;
+        Uri uri=data.getData();
+
+        if(DocumentsContract.isDocumentUri(this,uri)){
+            //如果是document类型的Uri,则通过document id处理
+            String docId=DocumentsContract.getDocumentId(uri);
+            if("com.android.providers.media.documents".equals(uri.getAuthority())){
+                String id=docId.split(":")[1];//解析出数字格式的id
+                String selection=MediaStore.Images.Media._ID+"="+id;
+                imagePath=getImagePath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,selection);
+            }else if("com.android.providers.downloads.documents".equals(uri.getAuthority())){
+                Uri contentUri= ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"),Long.valueOf(docId));
+                imagePath=getImagePath(contentUri,null);
+            }
+        }else if("content".equalsIgnoreCase(uri.getScheme())){
+            //如果是content类型的URI，则使用普通方式处理
+            imagePath=getImagePath(uri,null);
+        }else if("file".equalsIgnoreCase(uri.getScheme())){
+            //如果是file类型的Uri,直接获取图片路径即可
+            imagePath=uri.getPath();
+        }
+        System.out.println(imagePath);
+        setPic(imagePath);
+        //startPhotoZoom(uri);
+    }
+//    private void handlerImageBeforeKitKat(Intent data){
+//        Uri cropUri=data.getData();
+//        setPic(cropUri);
+//        //startPhotoZoom(cropUri);
+//    }
+
+    private String getImagePath(Uri uri, String selection) {
+        String path = null;
+        //通过Uri和selection来获取真实的图片路径
+        Cursor cursor = getContentResolver().query(uri, null, selection, null, null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+            }
+            cursor.close();
+        }
+        return path;
+    }
+
     private void upLoadingMethod() {
 
         //创建文件(你需要上传到服务器的文件)
         //file1Location文件的路径 ,我是在手机存储根目录下创建了一个文件夹,里面放着了一张图片;
-        File file = new File(file1Location);
+        File file = new File(imageFileLocation);
 
         //创建表单map,里面存储服务器本接口所需要的数据;
         MultipartBody.Builder builder = new MultipartBody.Builder()
