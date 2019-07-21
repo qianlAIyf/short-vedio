@@ -78,8 +78,6 @@ public class MainActivity extends AppCompatActivity {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             requestPermissions(mPermissionsArrays, REQUEST_EXTERNAL_CAMERA);
                         }
-                    } else {
-                        Toast.makeText(MainActivity.this, "已经获取所有所需权限", Toast.LENGTH_SHORT).show();
                     }
                 }
                 startActivity(new Intent(MainActivity.this,VedioIssue.class));
