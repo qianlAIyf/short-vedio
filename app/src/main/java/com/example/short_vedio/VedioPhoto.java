@@ -17,6 +17,7 @@ import android.telecom.VideoProfile;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.MediaController;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -30,10 +31,11 @@ import retrofit2.http.Url;
 
 public class VedioPhoto extends AppCompatActivity {
 
-    private ImageView imageView;
-    private VideoView videoView;
+    private ImageView imageView = null;
+    private VideoView videoView = null;
     private Button takePhoto;
     private Button takeVideo;
+    private Button upLoading;
 
     private File imgFile;
 
@@ -50,7 +52,10 @@ public class VedioPhoto extends AppCompatActivity {
 
         takePhoto = findViewById(R.id.takePhoto);
         takeVideo = findViewById(R.id.takeVideo);
+        upLoading = findViewById(R.id.upLoading);
 
+        MediaController mediaController = new MediaController(this);
+        videoView.setMediaController(mediaController);
         takePhoto.setOnClickListener(new View.OnClickListener() {//拍照
 
             @Override
@@ -74,8 +79,20 @@ public class VedioPhoto extends AppCompatActivity {
                 }
             }
         });
+        upLoading.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(imageView == null||videoView == null){
+                    Toast.makeText(VedioPhoto.this, "请拍摄封面图片和视频", Toast.LENGTH_SHORT).show();
+                }
+                else if(imageView != null&&videoView != null){
+
+                }
+            }
+        });
 
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
