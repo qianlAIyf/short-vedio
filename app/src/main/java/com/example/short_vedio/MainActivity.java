@@ -1,7 +1,11 @@
 package com.example.short_vedio;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
@@ -12,6 +16,8 @@ import android.widget.ImageView;
 
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.annotation.NonNull;
+import android.widget.Toast;
+
 import com.bumptech.glide.Glide;
 import com.example.short_vedio.bean.TinyVedio;
 import com.example.short_vedio.network.TinyVedioService;
@@ -20,6 +26,7 @@ import static android.support.v7.widget.RecyclerView.Adapter;
 import static android.support.v7.widget.RecyclerView.ViewHolder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import retrofit2.Call;
@@ -30,11 +37,20 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button buttonIssue, buttonPhoto, buttonSubmit;
+    Button buttonIssue, buttonPhoto;
 
     public RecyclerView mRv;
     private TinyVedio mTinyVedios;
 
+//    private static final int REQUEST_IMAGE_CAPTURE = 1;
+//    private static final int REQUEST_VIDEO_CAPTURE = 2;
+    private static final int REQUEST_EXTERNAL_CAMERA = 101;
+
+    private String[] mPermissionsArrays = new String[]{
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         mRv = findViewById(R.id.rv);
         buttonIssue = findViewById(R.id.btn_issue);
         buttonPhoto = findViewById(R.id.btn_photo);
-        buttonSubmit = findViewById(R.id.btn_submit);
+
 
         //设置三个监听事件
         buttonIssue.setOnClickListener(new View.OnClickListener(){
@@ -55,15 +71,24 @@ public class MainActivity extends AppCompatActivity {
         buttonPhoto.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+
+                if (ContextCompat.checkSelfPermission(MainActivity.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                        || ContextCompat.checkSelfPermission(MainActivity.this,
+                        Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                    //todo 在这里申请相机、存储的权限
+                    if (!checkPermissionAllGranted(mPermissionsArrays)) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            requestPermissions(mPermissionsArrays, REQUEST_EXTERNAL_CAMERA);
+                        }
+                    } else {
+                        Toast.makeText(MainActivity.this, "已经获取所有所需权限", Toast.LENGTH_SHORT).show();
+                    }
+                }
                 startActivity(new Intent(MainActivity.this,VedioPhoto.class));
             }
         });
-        buttonSubmit.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this,VedioSubmit.class));
-            }
-        });
+
 
         mRv.setLayoutManager(new LinearLayoutManager(this));
         mRv.setAdapter(new Adapter(){
@@ -124,5 +149,29 @@ public class MainActivity extends AppCompatActivity {
     private void loadPics(TinyVedio tinyVedios) {
         mTinyVedios = tinyVedios;
         mRv.getAdapter().notifyDataSetChanged();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_EXTERNAL_CAMERA: {
+                //todo 判断权限是否已经授予
+                Toast.makeText(this, "已经授权" + Arrays.toString(permissions), Toast.LENGTH_LONG).show();
+                break;
+            }
+        }
+    }
+    private boolean checkPermissionAllGranted(String[] permissions) {
+        // 6.0以下不需要
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true;
+        }
+        for (String permission : permissions) {
+            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+                // 只要有一个权限没有被授予, 则直接返回 false
+                return false;
+            }
+        }
+        return true;
     }
 }

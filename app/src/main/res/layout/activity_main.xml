@@ -29,12 +29,6 @@
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
             android:text="拍摄录制"/>
-        <Button
-            android:id="@+id/btn_submit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:text="上传视频"/>
     </LinearLayout>
 
 
