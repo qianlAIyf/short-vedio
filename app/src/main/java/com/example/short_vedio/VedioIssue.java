@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -52,48 +53,16 @@ public class VedioIssue extends AppCompatActivity {
     private  static  final int REQUEST_CODE_PIC_PHOTO = 3;
     private  static  final int REQUEST_CODE_VIDEO = 4;
 
-    public static final String SD_HOME_DIR = Environment.getExternalStorageDirectory().getPath() + "";          //SD卡根目录
-    private final String imageFileLocation = SD_HOME_DIR + "";         //要上传的文件存储位置
-    private final String videoFile1Location = SD_HOME_DIR + "";         //要上传的文件存储位置
+    private static boolean getImagePath_State = false;  //用于判断图片文件路径获取状态
+    private static boolean getVideoPath_State = false;  //用于判断视频文件路径获取状态
 
     @Override
     protected void onCreate(Bundle  savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.video_issue);
 
-        btn_selectPic = findViewById(R.id.btn_selectPic);
-        btn_selectVideo = findViewById(R.id.btn_selectVideo);
-        btn_uploading = findViewById(R.id.upLoading);
-
-        videoView = findViewById(R.id.video);
-        imageView = findViewById(R.id.image);
-
-        btn_selectPic.setOnClickListener(new View.OnClickListener() {//选择封面图
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("image/*");
-                startActivityForResult(intent, REQUEST_CODE_PIC_PHOTO);
-
-            }
-        });
-        btn_selectVideo.setOnClickListener(new View.OnClickListener() {//选择视频
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("video/*"); //选择视频 （mp4 3gp 是android支持的视频格式）
-                //intent.addCategory(Intent.CATEGORY_OPENABLE);
-                /* 取得相片后返回本画面 */
-                startActivityForResult(intent,REQUEST_CODE_VIDEO);
-
-            }
-        });
-        btn_uploading.setOnClickListener(new View.OnClickListener() {//选择视频
-            @Override
-            public void onClick(View v) {
-                upLoadingMethod();
-            }
-        });
+        initView();
+        setListeners();
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -123,7 +92,6 @@ public class VedioIssue extends AppCompatActivity {
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
-
     private void setPic(String imagePath){
         imgFile = new File(imagePath);
         int targetW = imageView.getWidth();
@@ -147,11 +115,10 @@ public class VedioIssue extends AppCompatActivity {
         imageView.setImageBitmap(bmp);
 
     }
-
     //获取图片路径
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private String handlerImageOnKitKat(Intent data){
-        String imagePath=null;
+
         Uri uri=data.getData();
 
         if(DocumentsContract.isDocumentUri(this,uri)){
@@ -172,16 +139,13 @@ public class VedioIssue extends AppCompatActivity {
             //如果是file类型的Uri,直接获取图片路径即可
             imagePath=uri.getPath();
         }
-
+        getImagePath_State = true;
         setPic(imagePath);
+        if(getVideoPath_State && getImagePath_State){
+            btn_uploading.setEnabled(true);
+        }
         return imagePath;
     }
-//    private void handlerImageBeforeKitKat(Intent data){
-//        Uri cropUri=data.getData();
-//        setPic(cropUri);
-//        //startPhotoZoom(cropUri);
-//    }
-
     private String getImagePath(Uri uri, String selection) {
         String path = null;
         //通过Uri和selection来获取真实的图片路径
@@ -194,9 +158,7 @@ public class VedioIssue extends AppCompatActivity {
         }
         return path;
     }
-
     //获取视频路径
-
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private String handlerVideoOnKitKat(Intent data){
         String videoPath=null;
@@ -220,14 +182,12 @@ public class VedioIssue extends AppCompatActivity {
             //如果是file类型的Uri,直接获取图片路径即可
             videoPath=uri.getPath();
         }
+        getVideoPath_State = true;
+        if(getVideoPath_State && getImagePath_State){
+            btn_uploading.setEnabled(true);
+        }
         return videoPath;
     }
-//    private void handlerImageBeforeKitKat(Intent data){
-//        Uri cropUri=data.getData();
-//        setPic(cropUri);
-//        //startPhotoZoom(cropUri);
-//    }
-
     private String getVideoPath(Uri uri, String selection) {
         String path = null;
         //通过Uri和selection来获取真实的图片路径
@@ -241,25 +201,27 @@ public class VedioIssue extends AppCompatActivity {
         return path;
     }
     private void upLoadingMethod() {
-
-        //创建文件(你需要上传到服务器的文件)
-        //file1Location文件的路径 ,我是在手机存储根目录下创建了一个文件夹,里面放着了一张图片;
-        File file = new File(imageFileLocation);
+        btn_uploading.setText("上传中...");
+        btn_uploading.setEnabled(false);
+        //创建文件
+        File imageFile = new File(imagePath);
+        File videoFile = new File(videoPath);
 
         //创建表单map,里面存储服务器本接口所需要的数据;
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 //在这里添加服务器除了文件之外的其他参数
-                .addFormDataPart("参数1", "值1")
-                .addFormDataPart("参数2", "值2");
-
+//                .addFormDataPart("feeds", null)
+                .addFormDataPart("success", "true");
 
         //设置文件的格式;两个文件上传在这里添加
-        RequestBody imageBody = RequestBody.create(MediaType.parse("multipart/form-data"), file);
-        // RequestBody imageBody1 = RequestBody.create(MediaType.parse("multipart/form-data"), file1);
-        //添加文件(uploadfile就是你服务器中需要的文件参数)
-        builder.addFormDataPart("uploadfile", file.getName(), imageBody);
-        //builder.addFormDataPart("uploadfile1", file1.getName(), imageBody1);
+        RequestBody imageBody = RequestBody.create(MediaType.parse("multipart/form-data"), imageFile);
+        RequestBody videoBody = RequestBody.create(MediaType.parse("multipart/form-data"), videoFile);
+        RequestBody videoDescriptionBody = RequestBody.create(MediaType.parse("multipart/form-data"),"!");
+        //添加文件(file就是你服务器中需要的文件参数)
+        builder.addFormDataPart("file1", imageFile.getName(), imageBody);
+        builder.addFormDataPart("file2", videoFile.getName(), videoBody);
+        builder.addFormDataPart("description","");
         //生成接口需要的list
         List<MultipartBody.Part> parts = builder.build().parts();
         //创建设置OkHttpClient
@@ -274,7 +236,7 @@ public class VedioIssue extends AppCompatActivity {
         Retrofit retrofit = new Retrofit.Builder()
                 //设置基站地址(基站地址+描述网络请求的接口上面注释的Post地址,就是要上传文件到服务器的地址,
                 // 这只是一种设置地址的方法,还有其他方式,不在赘述)
-                .baseUrl("你的基站地址")
+                .baseUrl("http://test.androidcamp.bytedance.com/")
                 //设置委托,使用OKHttp联网,也可以设置其他的;
                 .client(okHttpClient)
                 //设置数据解析器,如果没有这个类需要添加依赖:
@@ -283,21 +245,68 @@ public class VedioIssue extends AppCompatActivity {
                 // .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build();
         //实例化请求接口,把表单传递过去;
-        Call<TinyVedio> call = retrofit.create(IssueService.class).upLoading(parts);
+        Call<TinyVedio> call = retrofit.create(IssueService.class).upLoading(parts.get(0),parts.get(1),videoDescriptionBody);
         //开始请求
         call.enqueue(new Callback<TinyVedio>() {
             @Override
             public void onResponse(Call<TinyVedio> call, Response<TinyVedio> response) {
                 //联网有响应或有返回数据
                 System.out.println(response.body().toString());
+                System.out.println("!!!!");
+                btn_uploading.setText("上传成功");
+                btn_uploading.setEnabled(true);
+                btn_uploading.setText("成功，继续上传");
+                btn_uploading.setBackgroundColor(Color.parseColor("#00FF00"));
             }
 
             @Override
             public void onFailure(Call<TinyVedio> call, Throwable t) {
                 //连接失败,多数是网络不可用导致的
                 System.out.println("网络不可用");
+                btn_uploading.setEnabled(true);
+                btn_uploading.setText("失败，再次上传");
+                btn_uploading.setBackgroundColor(Color.parseColor("#FF0000"));
             }
         });
+    }
+    public void initView(){
 
+        btn_selectPic = findViewById(R.id.btn_selectPic);
+        btn_selectVideo = findViewById(R.id.btn_selectVideo);
+        btn_uploading = findViewById(R.id.upLoading);
+
+        videoView = findViewById(R.id.video);
+        imageView = findViewById(R.id.image);
+
+        btn_uploading.setEnabled(false);
+    }
+    public void setListeners(){
+
+        btn_selectPic.setOnClickListener(new View.OnClickListener() {//选择封面图
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/*");
+                startActivityForResult(intent, REQUEST_CODE_PIC_PHOTO);
+
+            }
+        });
+        btn_selectVideo.setOnClickListener(new View.OnClickListener() {//选择视频
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("video/*"); //选择视频 （mp4 3gp 是android支持的视频格式）
+                //intent.addCategory(Intent.CATEGORY_OPENABLE);
+                /* 取得相片后返回本画面 */
+                startActivityForResult(intent,REQUEST_CODE_VIDEO);
+
+            }
+        });
+        btn_uploading.setOnClickListener(new View.OnClickListener() {//选择视频
+            @Override
+            public void onClick(View v) {
+                upLoadingMethod();
+            }
+        });
     }
 }

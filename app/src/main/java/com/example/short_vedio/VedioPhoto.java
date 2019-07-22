@@ -86,7 +86,7 @@ public class VedioPhoto extends AppCompatActivity {
                     Toast.makeText(VedioPhoto.this, "请拍摄封面图片和视频", Toast.LENGTH_SHORT).show();
                 }
                 else if(imageView != null&&videoView != null){
-
+                    startActivity(new Intent(VedioPhoto.this,VedioIssue.class));
                 }
             }
         });
