@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.ContentObservable;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -38,6 +39,10 @@ public class VedioPhoto extends AppCompatActivity {
     private Button upLoading;
 
     private File imgFile;
+    private File videoFile;
+
+    private String imgPath;
+    private String videoPath;
 
     private static final int REQUEST_IMAGE_CAPTURE = 1;
     private static final int REQUEST_VIDEO_CAPTURE = 2;
@@ -74,6 +79,13 @@ public class VedioPhoto extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+                videoFile = Utils.getOutputMediaFile(Utils.MEDIA_TYPE_VIDEO);
+                videoPath = videoFile.getPath();
+                System.out.println(videoPath);
+//                ContentValues contentValues = new ContentValues(1);
+//                contentValues.put(MediaStore.Video.Media.DATA,videoFile.getPath());
+//                Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,contentValues);
+//                takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT,uri);
                 if(takeVideoIntent.resolveActivity(getPackageManager())!=null){
                     startActivityForResult(takeVideoIntent,REQUEST_VIDEO_CAPTURE);
                 }
@@ -104,6 +116,7 @@ public class VedioPhoto extends AppCompatActivity {
             Uri videoUri = data.getData();
             videoView.setVideoURI(videoUri);
             videoView.start();
+            System.out.println(Utils.convertUriToPath(this,Uri.fromFile(videoFile)));
         }
     }
     private void setPic(){
@@ -127,6 +140,8 @@ public class VedioPhoto extends AppCompatActivity {
         Bitmap bmp = BitmapFactory.decodeFile(imgFile.getAbsolutePath(),bmOption);
         bmp=Utils.rotateImage(bmp,Utils.convertUriToPath(this,Uri.fromFile(imgFile)));
         imageView.setImageBitmap(bmp);
+        imgPath = Utils.convertUriToPath(this,Uri.fromFile(imgFile));
+        System.out.println(imgPath);
 
     }
 
