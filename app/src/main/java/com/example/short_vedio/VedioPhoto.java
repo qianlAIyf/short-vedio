@@ -30,7 +30,7 @@ import java.util.Arrays;
 
 import retrofit2.http.Url;
 
-public class VedioPhoto extends AppCompatActivity {
+public class VedioPhoto extends VedioIssue{
 
     private ImageView imageView = null;
     private VideoView videoView = null;
@@ -62,7 +62,6 @@ public class VedioPhoto extends AppCompatActivity {
         MediaController mediaController = new MediaController(this);
         videoView.setMediaController(mediaController);
         takePhoto.setOnClickListener(new View.OnClickListener() {//拍照
-
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -98,11 +97,10 @@ public class VedioPhoto extends AppCompatActivity {
                     Toast.makeText(VedioPhoto.this, "请拍摄封面图片和视频", Toast.LENGTH_SHORT).show();
                 }
                 else if(imageView != null&&videoView != null){
-                    startActivity(new Intent(VedioPhoto.this,VedioIssue.class));
+                    if(VedioPhoto.super.upLoadingMethod(imgPath, videoPath)) {upLoading.setText("上传成功"); upLoading.setEnabled(true);}
                 }
             }
         });
-
     }
 
 

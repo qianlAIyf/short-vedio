@@ -55,6 +55,7 @@ public class VedioIssue extends AppCompatActivity {
 
     private static boolean getImagePath_State = false;  //用于判断图片文件路径获取状态
     private static boolean getVideoPath_State = false;  //用于判断视频文件路径获取状态
+    private static boolean b ;//判断是否上传成功
 
     @Override
     protected void onCreate(Bundle  savedInstanceState) {
@@ -200,7 +201,8 @@ public class VedioIssue extends AppCompatActivity {
         }
         return path;
     }
-    private void upLoadingMethod() {
+    public boolean upLoadingMethod(String imagePath, String videoPath) {
+
         btn_uploading.setText("上传中...");
         btn_uploading.setEnabled(false);
         //创建文件
@@ -212,7 +214,9 @@ public class VedioIssue extends AppCompatActivity {
                 .setType(MultipartBody.FORM)
                 //在这里添加服务器除了文件之外的其他参数
 //                .addFormDataPart("feeds", null)
-                .addFormDataPart("success", "true");
+                .addFormDataPart("success", "true")
+                .addFormDataPart("user_name","qf")
+                .addFormDataPart("student_id","1120");
 
         //设置文件的格式;两个文件上传在这里添加
         RequestBody imageBody = RequestBody.create(MediaType.parse("multipart/form-data"), imageFile);
@@ -254,6 +258,7 @@ public class VedioIssue extends AppCompatActivity {
                 System.out.println(response.body().toString());
                 System.out.println("!!!!");
                 btn_uploading.setText("上传成功");
+                b = true;
                 btn_uploading.setEnabled(true);
                 btn_uploading.setText("成功，继续上传");
                 btn_uploading.setBackgroundColor(Color.parseColor("#00FF00"));
@@ -264,10 +269,12 @@ public class VedioIssue extends AppCompatActivity {
                 //连接失败,多数是网络不可用导致的
                 System.out.println("网络不可用");
                 btn_uploading.setEnabled(true);
+                b= false;
                 btn_uploading.setText("失败，再次上传");
                 btn_uploading.setBackgroundColor(Color.parseColor("#FF0000"));
             }
         });
+        return b;
     }
     public void initView(){
 
@@ -277,6 +284,7 @@ public class VedioIssue extends AppCompatActivity {
 
         videoView = findViewById(R.id.video);
         imageView = findViewById(R.id.image);
+
 
         btn_uploading.setEnabled(false);
     }
@@ -305,7 +313,7 @@ public class VedioIssue extends AppCompatActivity {
         btn_uploading.setOnClickListener(new View.OnClickListener() {//选择视频
             @Override
             public void onClick(View v) {
-                upLoadingMethod();
+                upLoadingMethod(imagePath,videoPath);
             }
         });
     }
